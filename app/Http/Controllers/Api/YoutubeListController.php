@@ -8,6 +8,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use SimpleXMLElement;
 use Illuminate\Support\Str;
+use DateTime;
+use DatePeriod;
+use DateInterval;
 
 class YoutubeListController extends Controller
 {
@@ -51,10 +54,18 @@ class YoutubeListController extends Controller
             parse_str($urlParam, $params);
 
             $api = env('YOUTUBE_API');
-            $requestUrl = 'https://www.googleapis.com/youtube/v3/videos?id=' . $params['v'] . '&key=' . $api . '&part=snippet&fields=items(snippet(title))';
+            $requestUrl = 'https://www.googleapis.com/youtube/v3/videos?id=' . $params['v'] . '&key=' . $api . '&part=snippet';
             $result = json_decode(file_get_contents($requestUrl), true);
             $title = $title ?? $result['items'][0]['snippet']['title'] ?? null;
             $jsonUrl = 'https://www.youtube.com/watch?v=' . $params['v'];
+            $requestUrl = 'https://www.googleapis.com/youtube/v3/videos?id=' . $params['v'] . '&key=' . $api . '&part=contentDetails';
+            $result = json_decode(file_get_contents($requestUrl), true);
+            $length = $result['items'][0]['contentDetails']['duration'];
+            $interval = new DateInterval($length);
+            $length = $interval->format("%H:%I:%S");
+            if(strpos($length, '00:') === 0){
+                $length = substr($length, strlen('00:'));
+            }
             if($title === null){
                 return response(['error' => '動画タイトルの取得に失敗しました。'], 400);
             }
@@ -68,6 +79,8 @@ class YoutubeListController extends Controller
             $result = file_get_contents('https://ext.nicovideo.jp/api/getthumbinfo/sm' . $param);
             $xml = new SimpleXMLElement($result);
             $title = $title ?? $xml->thumb->title->__toString();
+            $length = $xml->thumb->length->__toString();
+
             $jsonUrl = 'https://www.nicovideo.jp/watch/sm' . $param;
             if($title === null){
                 return response(['error' => '動画タイトルの取得に失敗しました。'], 400);
@@ -108,6 +121,7 @@ class YoutubeListController extends Controller
             'url' => $jsonUrl,
             'title' => htmlspecialchars($title),
             'username' => htmlspecialchars($request->input('username')),
+            'length' => $length ?? '',
         ];
         Storage::disk('local')->put($room_id . '.json', json_encode($json));
         return response([]);

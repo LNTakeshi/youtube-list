@@ -72,6 +72,10 @@
                 text-align: center;
             }
 
+            .left-text{
+                text-align: left;
+            }
+
             .invisible{
                 display: none;
             }
@@ -170,11 +174,16 @@ function getList(){
         (data)=>{
             var $table = $('.list-table');
             $table.empty();
-            $table.append('<tr><th>時刻</th><th>送信者</th><th>タイトル</th><th>URL</th></tr>');
+            $table.append('<tr><th>時刻</th><th>送信者</th><th>再生時間</th><th class="left-text">タイトル</th></tr>');
             data.data.reverse();
             $.each(data.data, (index, val) =>{
                 let time = moment(val.time * 1000);
-                $table.append('<tr' + (data.info.currentIndex == (data.data.length - index - 1) ? ' class="current-playing"' : '') + '><td class="center-text">'+ time.format('YYYY年MM月DD日 HH:mm') +'</td><td>' + (val.username || '未入力') + '</td><td>' + val.title + '</td><td class="center-text"><a href="'+ val.url +'">link</a></td></tr>');
+                $table.append('<tr' + (data.info.currentIndex == (data.data.length - index - 1) ? ' class="current-playing"' : '') + '>'
+                + '<td class="center-text">'+ time.format('YYYY年MM月DD日 HH:mm') +'</td>'
+                + '<td class="center-text">' + (val.username || '未入力') + '</td>'
+                + '<td class="center-text">' + val.length + '</td>'
+                + '<td><a href="'+ val.url +'">' + val.title + '</a></td>'
+                + '</tr>');
             });
             if(data.privateInfo != null && data.privateInfo.masterId != null){
                 $('#masterIdView').removeClass("invisible");
