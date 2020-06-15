@@ -11,6 +11,7 @@
         <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/locale/ja.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
         <!-- Styles -->
         <style>
             html, body {
@@ -84,6 +85,10 @@
                 background-color: #b3e5fc;
             }
 
+            .deleted{
+                background-color: #999999;
+            }
+
             input[type="text"] {
                 font-size: 16px;
                 transform: scale(calc(12 / 16));
@@ -123,11 +128,8 @@ $(()=>{
     var cookies = document.cookie;
     var cookiesArray = cookies.split(';');
 
-    for(var c of cookiesArray){
-        var cArray = c.split('=');
-        if( cArray[0] == 'name'){
-            $('#username').val(decodeURIComponent(cArray[1]));
-        }
+    if($.cookie("name") != null){
+        $('#username').val(decodeURIComponent($.cookie("name")));
     }
     $('#copy-button').click((e)=>{
         var copyTarget = document.getElementById("masterIdText");
@@ -136,12 +138,41 @@ $(()=>{
 
     });
 
+    $(document).on("click", ".delete-button", function (event) {
+
+        if(!sending){
+        sending = true;
+        $('#submit-button').prop("disabled", true);
+        $('#delete-button').prop("disabled", true);
+
+        $.post(
+                '{{ url('/') }}/api/youtubelist/remove',
+                {
+                    'room_id': '{{ $room_id }}',
+                    'index': $(event.currentTarget).data('id'),
+                    'uuid': $.cookie("uuid"),
+                },
+            ).done(function(data, textStatus, jqXHR){
+                getList();
+            }).fail(function(jqXHR, textStatus, errorThrown){
+                alert(jqXHR.responseJSON.error);
+            }).always(function(){
+                sending = false;
+                $('#submit-button').prop("disabled", false);
+                $('#delete-button').prop("disabled", false);
+            });
+
+        }
+    });
+
 });
 let sending = false;
 function send(){
     if(!sending){
         sending = true;
         $('#submit-button').prop("disabled", true);
+        $('#delete-button').prop("disabled", true);
+
         $.post(
                 '{{ url('/') }}/api/youtubelist/send',
                 {
@@ -149,6 +180,7 @@ function send(){
                     'room_id': '{{ $room_id }}',
                     'username': $('#username').val(),
                     'title': $('#title').val(),
+                    'uuid': $.cookie("uuid"),
                 },
             ).done(function(data, textStatus, jqXHR){
                 getList();
@@ -159,9 +191,10 @@ function send(){
             }).always(function(){
                 sending = false;
                 $('#submit-button').prop("disabled", false);
+                $('#delete-button').prop("disabled", false);
             });
 
-        document.cookie = "name=" + encodeURIComponent($('#username').val()) + ";max-age=" + 60 * 60* 24 * 30;
+        $.cookie("name", encodeURIComponent($('#username').val()) , { expires: 30 });
     }
 }
 function getList(){
@@ -169,7 +202,8 @@ function getList(){
     $.getJSON(
         '{{ url('/') }}/api/youtubelist/getList',
         {
-            'room_id': '{{ $room_id }}'
+            'room_id': '{{ $room_id }}',
+            'uuid': ($.cookie("uuid") || ""),
         },
         (data)=>{
             var $table = $('.list-table');
@@ -178,9 +212,9 @@ function getList(){
             data.data.reverse();
             $.each(data.data, (index, val) =>{
                 let time = moment(val.time * 1000);
-                $table.append('<tr' + (data.info.currentIndex == (data.data.length - index - 1) ? ' class="current-playing"' : '') + '>'
+                $table.append('<tr' + (data.info.currentIndex == (data.data.length - index - 1) ? ' class="current-playing"' : val['deleted'] ? ' class="deleted"' : '') + '>'
                 + '<td class="center-text">'+ time.format('YYYY年MM月DD日 HH:mm') +'</td>'
-                + '<td class="center-text">' + (val.username || '未入力') + '</td>'
+                + '<td class="center-text">' + (val.username || '未入力') + (val.removable ? '<input type="button" class="delete-button" value= "削除" data-id="' + (data.data.length - index - 1)  + '" />' : '') + '</td>'
                 + '<td class="center-text">' + val.length + '</td>'
                 + '<td><a href="'+ val.url +'">' + val.title + '</a></td>'
                 + '</tr>');
@@ -188,6 +222,9 @@ function getList(){
             if(data.privateInfo != null && data.privateInfo.masterId != null){
                 $('#masterIdView').removeClass("invisible");
                 $('#masterIdText').val(data.privateInfo.masterId);
+            }
+            if(data.privateInfo != null && data.privateInfo.uuid != null){
+                $.cookie("uuid", data.privateInfo.uuid, { expires: 30 });
             }
         }
     );

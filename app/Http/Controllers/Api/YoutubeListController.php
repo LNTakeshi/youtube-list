@@ -24,15 +24,18 @@ class YoutubeListController extends Controller
         }
         if(!$request->has('room_id')){
             return response(['error' => 'room_idが入っていない'],400);
-
+        }
+        if(!$request->has('uuid')){
+            return response(['error' => 'uuidがない'],400);
         }
         if($request->has('username') && mb_strlen($request->input('username')) > 20){
             return response(['error' => '名前が長すぎる'],400);
         }
         $room_id = $request->input('room_id');
         $url = $request->input('url');
+        $uuid = $request->input('uuid');
         $title = $request->input('title', null);
-        if(mb_strlen($title) > 30){
+        if(mb_strlen($title) > 50){
             return response(['error' => 'カスタムタイトルが長すぎる'],400);
 
         }
@@ -122,7 +125,9 @@ class YoutubeListController extends Controller
             'title' => htmlspecialchars($title),
             'username' => htmlspecialchars($request->input('username')),
             'length' => $length ?? '',
+            'deleted' => false,
         ];
+        $json['privateInfo']['senderUUIDArray'][count($json['data']) - 1] = $uuid;
         Storage::disk('local')->put($room_id . '.json', json_encode($json));
         return response([]);
 
@@ -134,6 +139,7 @@ class YoutubeListController extends Controller
             return response(['error' => 'error'], 400);
         }
         $room_id = $request->get('room_id');
+        $uuid = $request->get('uuid');
         if(!Storage::disk('local')->exists($room_id . '.json')){
             $isMaster = true;
             $this->createJson($room_id);
@@ -159,8 +165,17 @@ class YoutubeListController extends Controller
 
         }
         $json =  json_decode(Storage::disk('local')->get($room_id . '.json'), true);
+        if($uuid != null){
+            foreach ($json['data'] as $key => $value) {
+                $json['data'][$key]['removable'] = !($value['deleted'] ?? false)  && ($json['privateInfo']['senderUUIDArray'][$key] === $uuid);
+            }
+        }
         if(!$isMaster){
             unset($json['privateInfo']);
+        }
+        if($uuid == null){
+            $uuid = Str::uuid();
+            $json['privateInfo']['uuid'] = $uuid;
         }
         return $json;
     }
@@ -181,6 +196,28 @@ class YoutubeListController extends Controller
             return response(['error' => 'error'], 400);
         }
         $json['info']['currentIndex'] = $index;
+        Storage::disk('local')->put($room_id . '.json', json_encode($json));
+
+        return response([]);
+    }
+
+    
+    public function remove(Request $request){
+        if(!$request->has('room_id') || !$request->has('index') || !$request->has('uuid')){
+            return response(['error' => 'error'], 400);
+        }
+        $room_id = $request->get('room_id');
+        $index = $request->get('index');
+        $uuid = $request->get('uuid');
+
+        if(!Storage::disk('local')->exists($room_id . '.json')){
+            return response(['error' => 'error'], 400);
+        }
+        $json =  json_decode(Storage::disk('local')->get($room_id . '.json'), true);
+        if(count($json['data']) < $index || $json['privateInfo']['senderUUIDArray'][$index] != $uuid ){
+            return response(['error' => 'error'], 400);
+        }
+        $json['data'][$index]['deleted'] = true;
         Storage::disk('local')->put($room_id . '.json', json_encode($json));
 
         return response([]);

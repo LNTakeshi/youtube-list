@@ -21,5 +21,6 @@ Route::group(['namespace' => 'Api'],function () {
     Route::post('youtubelist/send', 'YoutubeListController@send');
     Route::get('youtubelist/getList', 'YoutubeListController@getList');
     Route::post('youtubelist/setCurrentIndex', 'YoutubeListController@setCurrentIndex');
+    Route::post('youtubelist/remove', 'YoutubeListController@remove');
 
 });
