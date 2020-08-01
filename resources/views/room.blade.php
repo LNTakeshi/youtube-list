@@ -89,6 +89,10 @@
                 background-color: #999999;
             }
 
+            .td-name > *:nth-last-child(2){
+                margin-right: 3px;
+            }
+
             input[type="text"] {
                 font-size: 16px;
                 transform: scale(calc(12 / 16));
@@ -120,8 +124,9 @@
 
     </body>
     <script>
-
+    let masterId = null;
 $(()=>{
+    masterId = $.cookie("master-id-" + "{{ $room_id }}");
     $('#submit-button').click(()=>{send()});
     setInterval(()=>{getList()}, 30000);
     getList();
@@ -142,8 +147,7 @@ $(()=>{
 
         if(!sending){
         sending = true;
-        $('#submit-button').prop("disabled", true);
-        $('#delete-button').prop("disabled", true);
+        $('input').prop("disabled", true);
 
         $.post(
                 '{{ url('/') }}/api/youtubelist/remove',
@@ -151,6 +155,7 @@ $(()=>{
                     'room_id': '{{ $room_id }}',
                     'index': $(event.currentTarget).data('id'),
                     'uuid': $.cookie("uuid"),
+                    'master_id': masterId,
                 },
             ).done(function(data, textStatus, jqXHR){
                 getList();
@@ -158,8 +163,7 @@ $(()=>{
                 alert(jqXHR.responseJSON.error);
             }).always(function(){
                 sending = false;
-                $('#submit-button').prop("disabled", false);
-                $('#delete-button').prop("disabled", false);
+                $('input').prop("disabled", false);
             });
 
         }
@@ -170,8 +174,7 @@ let sending = false;
 function send(){
     if(!sending){
         sending = true;
-        $('#submit-button').prop("disabled", true);
-        $('#delete-button').prop("disabled", true);
+        $('input').prop("disabled", true);
 
         $.post(
                 '{{ url('/') }}/api/youtubelist/send',
@@ -190,8 +193,7 @@ function send(){
                 alert(jqXHR.responseJSON.error);
             }).always(function(){
                 sending = false;
-                $('#submit-button').prop("disabled", false);
-                $('#delete-button').prop("disabled", false);
+                $('input').prop("disabled", false);
             });
 
         $.cookie("name", encodeURIComponent($('#username').val()) , { expires: 30 });
@@ -204,6 +206,7 @@ function getList(){
         {
             'room_id': '{{ $room_id }}',
             'uuid': ($.cookie("uuid") || ""),
+            'master_id': masterId,
         },
         (data)=>{
             var $table = $('.list-table');
@@ -214,7 +217,7 @@ function getList(){
                 let time = moment(val.time * 1000);
                 $table.append('<tr' + (data.info.currentIndex == (data.data.length - index - 1) ? ' class="current-playing"' : val['deleted'] ? ' class="deleted"' : '') + '>'
                 + '<td class="center-text">'+ time.format('YYYY年MM月DD日 HH:mm') +'</td>'
-                + '<td class="center-text">' + (val.username || '未入力') + (val.removable ? '<input type="button" class="delete-button" value= "削除" data-id="' + (data.data.length - index - 1)  + '" />' : '') + '</td>'
+                + '<td class="center-text td-name"><span>' + (val.username || '未入力') + '</span>' + (val.removable ? '<input type="button" class="delete-button" value= "削除" data-id="' + (data.data.length - index - 1)  + '" />' : '') + '</td>'
                 + '<td class="center-text">' + val.length + '</td>'
                 + '<td><a href="'+ val.url +'">' + val.title + '</a></td>'
                 + '</tr>');
@@ -222,6 +225,8 @@ function getList(){
             if(data.privateInfo != null && data.privateInfo.masterId != null){
                 $('#masterIdView').removeClass("invisible");
                 $('#masterIdText').val(data.privateInfo.masterId);
+                $.cookie("master-id-" + "{{ $room_id }}" , data.privateInfo.masterId, { expires: 2 });
+                masterId = data.privateInfo.masterId;
             }
             if(data.privateInfo != null && data.privateInfo.uuid != null){
                 $.cookie("uuid", data.privateInfo.uuid, { expires: 30 });
