@@ -95,7 +95,12 @@
 
             input[type="text"] {
                 font-size: 16px;
-                transform: scale(calc(12 / 16));
+            }
+            input[type="text"]::placeholder {
+                font-size: 12px;
+            }
+            .submit-td{
+                text-align: left;
             }
 
         </style>
@@ -110,10 +115,12 @@
             </div>
             <div class="flex-center">
                 <form method="GET" onsubmit="return false;">
-                    <div><label>ユーザー名(任意)</label><input id="username" type="text" maxlength="30"/></div>
-                    <div><label>youtube/niconico/soundcloud URL</label><input id="url" type="text"/></div>
-                    <div><label>カスタムタイトル</label><input id="title" type="text" placeholder="空欄の場合はURLから取得" /></div>
-                    <input value="URL送信" id="submit-button" type="submit" />
+                    <table>
+                    <tr><td><label>ユーザー名(任意)</label></td><td><input id="username" type="text" maxlength="30"/></td></tr>
+                    <tr><td><label>URL</label></td><td><input id="url" type="text" placeholder="youtube/niconico/soundcloud/twitter"/></td></tr>
+                    <tr><td><label>カスタムタイトル</label></td><td><input id="title" type="text" placeholder="空欄の場合はURLから取得" /></td></tr>
+                    <tr><td></td><td class="submit-td"><input value="URL送信" id="submit-button" type="submit" /></td></tr>
+                    </table>
                 </form>
             </div>
         </div>
@@ -219,7 +226,7 @@ function getList(){
                 + '<td class="center-text">'+ time.format('YYYY年MM月DD日 HH:mm') +'</td>'
                 + '<td class="center-text td-name"><span>' + (val.username || '未入力') + '</span>' + (val.removable ? '<input type="button" class="delete-button" value= "削除" data-id="' + (data.data.length - index - 1)  + '" />' : '') + '</td>'
                 + '<td class="center-text">' + val.length + '</td>'
-                + '<td><a href="'+ val.url +'">' + val.title + '</a></td>'
+                + '<td><a href="'+ val.url +'" target="_blank">' + val.title + '</a></td>'
                 + '</tr>');
             });
             if(data.privateInfo != null && data.privateInfo.masterId != null){

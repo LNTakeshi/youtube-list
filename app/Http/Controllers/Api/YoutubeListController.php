@@ -47,6 +47,7 @@ class YoutubeListController extends Controller
             $url = 'https://www.youtube.com/watch?v=' . substr($url, strlen('https://youtu.be/'));
         }
 
+        //URL判別
         $urlType = 0;
         if(strpos($url, 'https://www.youtube.com/') === 0 || strpos($url, 'https://m.youtube.com/') === 0){
             $urlType = self::URL_TYPE_YOUTUBE;
@@ -60,6 +61,7 @@ class YoutubeListController extends Controller
             return response(['error' => '無効なyoutube/ニコニコ/SoundCloud/twitterのURLです'], 400);
         }
 
+        //URL種類に応じてタイトルと動画の長さを取得
         $jsonUrl = '';
         if($urlType === self::URL_TYPE_YOUTUBE){
             $urlParam = parse_url($url, PHP_URL_QUERY);
@@ -149,6 +151,7 @@ class YoutubeListController extends Controller
                 return response(['error' => '動画タイトルの取得に失敗しました。'], 400);
             }
         }
+        //jsonに追加して成功レスポンスを返却
         $json = json_decode(Storage::disk('local')->get($room_id . '.json'),true);
         $time = new Carbon();
         $json['data'][] = [
@@ -174,6 +177,7 @@ class YoutubeListController extends Controller
         $uuid = $request->get('uuid');
         $masterId = $request->input('master_id', null);
 
+        //部屋が無かったり、最後の登録が3日前だったりした場合は部屋主になれる
         if(!Storage::disk('local')->exists($room_id . '.json')){
             $isMaster = true;
             $this->createJson($room_id);
@@ -199,14 +203,17 @@ class YoutubeListController extends Controller
 
         }
         $json =  json_decode(Storage::disk('local')->get($room_id . '.json'), true);
+        //jsonのmasterIdとUUIDが一致する場合は部屋主となる
         if($json['privateInfo']['masterId'] === $masterId){
             $isMaster = true;
         }
+        //自分の投稿した動画か、部屋主の場合は動画を削除できるフラグがtrueになる
         if($uuid != null){
             foreach ($json['data'] as $key => $value) {
                 $json['data'][$key]['removable'] = $json['info']['currentIndex'] < $key &&  (!($value['deleted'] ?? false)  && ($isMaster || $json['privateInfo']['senderUUIDArray'][$key] === $uuid));
             }
         }
+        //見せられないデータを消す
         if(!$isMaster){
             unset($json['privateInfo']);
         }
@@ -230,6 +237,7 @@ class YoutubeListController extends Controller
             return response(['error' => 'error'], 400);
         }
         $json =  json_decode(Storage::disk('local')->get($room_id . '.json'), true);
+        //アプリから部屋主としてログインしている場合は再生インデックスをセットできる
         if($json['privateInfo']['masterId'] != $master_id || count($json['data']) < $index){
             return response(['error' => 'error'], 400);
         }
@@ -258,6 +266,7 @@ class YoutubeListController extends Controller
         if($json['privateInfo']['masterId'] === $masterId){
             $isMaster = true;
         }
+        //自分の投稿した動画か、部屋主は動画を削除できる
         if(count($json['data']) < $index || ($json['privateInfo']['senderUUIDArray'][$index] != $uuid && !$isMaster)){
             return response(['error' => 'error'], 400);
         }
@@ -266,6 +275,22 @@ class YoutubeListController extends Controller
 
         return response([]);
     }
+
+
+    public function sendError(Request $request){
+        $json['addVersion'] = $request->get('addVersion');
+        $json['sendTime'] = $request->get('sendTime');
+        $json['condition'] = $request->get('condition');
+        $json['stackTrace'] = $request->get('stackTrace');
+        $json['roomId'] = $request->get('roomId');
+        $json['currentIndex'] = $request->get('currentIndex');
+        $json['currentTitle'] = $request->get('currentTitle');
+        $date = Carbon::now();
+        Storage::disk('local')->put('errorlog/' . $date->format('Ymd_His') . '.json', json_encode($json, JSON_PRETTY_PRINT));
+
+        return response([]);
+    }
+
 
     private function createJson($roomId){
         $time = new Carbon();
