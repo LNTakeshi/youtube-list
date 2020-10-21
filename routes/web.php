@@ -15,3 +15,4 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', 'IndexController@index');
 Route::get('/room/{room_id}', 'RoomController@index');
+Route::get('/myip', 'IndexController@myip');

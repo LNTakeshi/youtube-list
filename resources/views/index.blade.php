@@ -70,9 +70,6 @@
         <div class="flex-center full-height">
             <div class="content">
                 <div>
-                    <p><span class="notice">URL変更しました。以降は次のURLを使用してください。</span> <a href="https://lntk.info/youtube-list/">https://lntk.info/youtube-list/</a></p>
-                </div>
-                <div>
                     <p>youtubeとかの動画をみんなでリスト登録して鑑賞しようアプリ</p>
                 </div>
                 <div>
@@ -82,13 +79,14 @@
                     </form>
                 </div>
                 <div>
-                    <a href="{{ url('/app.zip') }}">アプリのダウンロード</a>
-                </div>
-                <div><p>v1.4.5 : (web)動画の再生時間を表示。(app)動画の自動スキップにStack数で制限できるように変更。</p></div>
-                <div><p>v1.4.6 : (web)リストのデザイン変更。(app)youtube-dlの更新など。</p></div>
-                <div><p>v1.4.7 : SoundCloudの再生に失敗する問題の修正。</p></div>
-                <div><p>v1.5.0 : (web/app)自分の追加した動画を削除できる機能の追加。※再生中の場合はスキップされません※※一度テストしてヨシ！なので何か起こりそうです</p></div>
+                    <p><a href="{{ url('/app.zip') }}">アプリのダウンロード</a></p>
 
+                </div>
+                <div><p>v1.7.3: 実行権限が無くてサーバーが建てられない問題を修正</p></div>
+                <div><p>v1.7.4: ニコニコプレミアムだとログインに失敗する問題を修正</p></div>
+                <div><p>v1.7.5: ニコニコにログインした場合は自分のアカウントで動画もダウンロードするよう変更。</p></div>
+                <div><p>v1.7.6: 細かい不具合の修正、「こまったときは」の追加</p></div>
+                <div><p>v1.7.7: 初回起動時に部屋が建てられない不具合の修正</p></div>
             </div>
         </div>
     </body>
